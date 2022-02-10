@@ -36,31 +36,60 @@ router.post('/', validateUser, (req, res, next) => {
   // insert user, check get request of users and see that user is object within array
   User.insert({ name: req.name })
     .then(newUser => {
-      res.status(201).json(newUser)
+      res.status(200).json(newUser)
     })
     .catch(next)
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', validateUserId, validateUser, (req, res, next) => {
   // RETURN THE FRESHLY UPDATED USER OBJECT
   // this needs a middleware to verify user id
   // and another middleware to check that the request body is valid
+  User.update(req.params.id, { name: req.name })
+    .then(() => {
+      return User.getById(req.params.id)
+    })
+    .then(updatedUser => {
+      res.json(updatedUser)
+    })
+    .catch(next)
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validateUserId, async (req, res, next) => {
   // RETURN THE FRESHLY DELETED USER OBJECT
   // this needs a middleware to verify user id
+  try {
+    await User.remove(req.params.id)
+    res.json(req.user)
+  }
+  catch(err) {
+    next(err)
+  }
 });
 
-router.get('/:id/posts', (req, res) => {
+router.get('/:id/posts', validateUserId, async (req, res, next) => {
   // RETURN THE ARRAY OF USER POSTS
   // this needs a middleware to verify user id
+  try {
+    const result = await User.getUserPosts(req.params.id)
+    res.json(result)
+  }
+  catch(err) {
+    next(err)
+  }
 });
 
-router.post('/:id/posts', (req, res) => {
+router.post('/:id/posts', validateUserId, validatePost, async (req, res, next) => {
   // RETURN THE NEWLY CREATED USER POST
   // this needs a middleware to verify user id
   // and another middleware to check that the request body is valid
+  try {
+    const result = await Post.insert({ user_id: req.params.id, text: req.text })
+    res.status(201).json(result)
+  }
+  catch(err) {
+    next(err)
+  }
 });
 
 // do not forget to export the router
